@@ -1,0 +1,10 @@
+{
+  "description": "This web application enables users to create and manage their own websites effortlessly, catering to individuals and businesses seeking an online presence.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
