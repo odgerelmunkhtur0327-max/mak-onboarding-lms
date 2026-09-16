@@ -426,11 +426,47 @@ function QuizzesTab() {
   )
 }
 
+function UserEditor({ user, onSave, onClose }: { user: User; onSave: () => void; onClose: () => void }) {
+  const [form, setForm] = useState({ name: user.name, email: user.email, department: user.department, startDate: user.startDate, password: '' })
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSave = () => {
+    if (!form.name.trim() || !form.email.trim()) return
+    store.addUser({
+      ...user,
+      name: form.name.trim(),
+      email: form.email.trim(),
+      department: form.department.trim(),
+      startDate: form.startDate,
+      password: form.password.trim() || user.password,
+    })
+    onSave()
+    onClose()
+  }
+
+  return (
+    <Modal title="Бүртгэл засах" onClose={onClose}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Inp label="НЭР" value={form.name} onChange={v => set('name', v)} placeholder="Нэр овог" />
+        <Inp label="И-МЭЙЛ" value={form.email} onChange={v => set('email', v)} placeholder="email@mak.mn" type="email" />
+        <Inp label="ХЭЛТЭС" value={form.department} onChange={v => set('department', v)} placeholder="Маркетинг, Санхүү..." />
+        <Inp label="ЭХЛЭХ ОГНОО" value={form.startDate} onChange={v => set('startDate', v)} type="date" />
+        <Inp label="НУУЦ ҮГ (хоосон үлдээвэл өөрчлөхгүй)" value={form.password} onChange={v => set('password', v)} placeholder="Шинэ нууц үг" type="password" />
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 16 }}>
+          <button onClick={onClose} style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: 'rgba(241,245,249,0.6)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 20px', cursor: 'pointer' }}>Цуцлах</button>
+          <button onClick={handleSave} disabled={!form.name.trim() || !form.email.trim()} style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: '#fff', background: form.name.trim() && form.email.trim() ? 'linear-gradient(135deg,#1a56db,#7c3aed)' : 'rgba(26,86,219,0.25)', border: 'none', borderRadius: 10, padding: '10px 24px', cursor: form.name.trim() && form.email.trim() ? 'pointer' : 'not-allowed' }}>Хадгалах</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function UsersTab() {
   const [users, setUsers] = useState(store.getUsers())
   const [loadingUsers, setLoadingUsers] = useState(true)
   const lessons = store.getLessons()
   const [addingUser, setAddingUser] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [newUser, setNewUser] = useState({ name: '', email: '', department: '', password: 'user123' })
 
   const refresh = () => {
@@ -498,43 +534,60 @@ function UsersTab() {
 
       {/* Users table */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr repeat(3, 40px) 80px 80px', gap: 0, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}>
-          {['НЭР', 'ХЭЛТЭС', 'ЭХЭЛСЭН ОГНОО', '1', '2', '3', 'ОНОО', ''].map((h, i) => (
-            <div key={i} style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em', textAlign: i >= 3 ? 'center' : 'left' }}>{h}</div>
-          ))}
+        {/* Header */}
+        <div style={{ display: 'flex', padding: '10px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', gap: 8 }}>
+          <div style={{ flex: '0 0 220px', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em' }}>НЭР</div>
+          <div style={{ flex: '0 0 120px', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em' }}>ХЭЛТЭС</div>
+          <div style={{ flex: '0 0 110px', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em' }}>ОГНОО</div>
+          <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+            {lessons.map(l => (
+              <div key={l.id} style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em' }}>{l.order}</div>
+            ))}
+          </div>
+          <div style={{ flex: '0 0 52px', textAlign: 'center', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'rgba(241,245,249,0.35)', letterSpacing: '0.08em' }}>ОНОО</div>
+          <div style={{ flex: '0 0 120px' }} />
         </div>
 
         {users.map((user, idx) => {
           const pct = totalPts(user)
-          const done = completedCount(user)
           return (
-            <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr repeat(3, 40px) 80px 80px', gap: 0, padding: '14px 16px', borderBottom: idx < users.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{user.name}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'rgba(241,245,249,0.35)' }}>{user.email}</div>
+            <div key={user.id} style={{ display: 'flex', alignItems: 'center', padding: '13px 18px', borderBottom: idx < users.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', gap: 8 }}>
+              <div style={{ flex: '0 0 220px', minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'rgba(241,245,249,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
               </div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(241,245,249,0.55)' }}>{user.department || '—'}</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.4)' }}>{user.startDate}</div>
-              {lessons.map(l => {
-                const p = user.progress.find(pr => pr.lessonId === l.id)
-                const pass = p?.quizAttempt?.passed
-                return (
-                  <div key={l.id} style={{ textAlign: 'center', fontSize: 16 }}>
-                    {pass ? '✅' : p?.videoCompleted ? '▶️' : '⬜'}
-                  </div>
-                )
-              })}
-              <div style={{ textAlign: 'center' }}>
-                {pct !== null ? (
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: pct >= 75 ? '#4ade80' : '#f87171' }}>
-                    {pct}%
-                  </span>
-                ) : <span style={{ color: 'rgba(241,245,249,0.25)', fontSize: 13 }}>—</span>}
+              <div style={{ flex: '0 0 120px', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(241,245,249,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.department || '—'}</div>
+              <div style={{ flex: '0 0 110px', fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.4)' }}>{user.startDate}</div>
+              <div style={{ flex: 1, display: 'flex', gap: 6 }}>
+                {lessons.map(l => {
+                  const p = user.progress.find(pr => pr.lessonId === l.id)
+                  const pass = p?.quizAttempt?.passed
+                  const color = pass ? '#4ade80' : p?.videoCompleted ? '#60a5fa' : 'rgba(255,255,255,0.1)'
+                  const label = pass ? '✓' : p?.videoCompleted ? '▶' : '·'
+                  return (
+                    <div key={l.id} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 26, height: 26, borderRadius: 6, background: pass ? 'rgba(22,163,74,0.15)' : p?.videoCompleted ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color }}>
+                        {label}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div style={{ textAlign: 'center' }}>
+              <div style={{ flex: '0 0 52px', textAlign: 'center' }}>
+                {pct !== null
+                  ? <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: pct >= 75 ? '#4ade80' : '#f87171' }}>{pct}%</span>
+                  : <span style={{ color: 'rgba(241,245,249,0.2)', fontSize: 13 }}>—</span>}
+              </div>
+              <div style={{ flex: '0 0 120px', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setEditingUser(user)}
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: '#60a5fa', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}
+                >
+                  Засах
+                </button>
                 <button
                   onClick={() => { if (confirm(`${user.name}-ийг устгах уу?`)) { store.deleteUser(user.id); refresh() } }}
-                  style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#f87171', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: '#f87171', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}
                 >
                   Устгах
                 </button>
@@ -549,6 +602,10 @@ function UsersTab() {
           </div>
         )}
       </div>
+
+      {editingUser && (
+        <UserEditor user={editingUser} onSave={refresh} onClose={() => setEditingUser(null)} />
+      )}
 
       {addingUser && (
         <Modal title="Шинэ ажилтан нэмэх" onClose={() => setAddingUser(false)}>

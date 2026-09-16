@@ -111,26 +111,6 @@ export default function LoginScreen({ onLogin }: { onLogin: (email: string, pass
           </form>
         </div>
 
-        {/* Demo hint */}
-        <div style={{ marginTop: 20, padding: '14px 18px', background: 'rgba(26,86,219,0.06)', border: '1px solid rgba(26,86,219,0.15)', borderRadius: 12 }}>
-          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.4)', margin: '0 0 8px', fontWeight: 600, letterSpacing: '0.06em' }}>
-            DEMO ДАНС
-          </p>
-          {[
-            { label: 'Ажилтан', email: 'user@mak.mn', pass: 'user123' },
-            { label: 'Админ', email: 'admin@mak.mn', pass: 'admin123' },
-          ].map(d => (
-            <button
-              key={d.email}
-              onClick={() => { setEmail(d.email); setPassword(d.pass) }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.5)', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#93c5fd')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(241,245,249,0.5)')}
-            >
-              {d.label}: {d.email} / {d.pass}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )

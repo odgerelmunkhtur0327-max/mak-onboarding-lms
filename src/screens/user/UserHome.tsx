@@ -10,6 +10,13 @@ type Props = {
 
 function lessonStatus(user: User, lesson: Lesson) {
   const prog = user.progress.find(p => p.lessonId === lesson.id)
+  const noQuestions = lesson.questions.length === 0
+  // A lesson with no questions is complete once video requirement is satisfied
+  if (noQuestions) {
+    if (!lesson.requireFullWatch) return 'passed'
+    if (prog?.videoCompleted) return 'passed'
+    return 'pending'
+  }
   if (!prog) return 'pending'
   if (prog.quizAttempt?.passed) return 'passed'
   if (prog.videoCompleted || (prog.quizAttempt && !prog.quizAttempt.passed)) return 'in_progress'

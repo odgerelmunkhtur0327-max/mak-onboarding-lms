@@ -382,7 +382,7 @@ function QuizModule({
 // ── Main LessonView ─────────────────────────────────────────────────────────
 
 export default function LessonView({
-  lesson,
+  lesson: lessonProp,
   user,
   onBack,
   onProgressUpdate,
@@ -392,6 +392,10 @@ export default function LessonView({
   onBack: () => void
   onProgressUpdate: () => void
 }) {
+  // Always use the freshest lesson data from the store so admin changes are reflected immediately
+  const lesson = store.getLessons().find(l => l.id === lessonProp.id) ?? lessonProp
+  const hasQuestions = lesson.questions.length > 0
+
   const existingProg = store.getUserProgress(user.id, lesson.id)
   const [videoCompleted, setVideoCompleted] = useState(existingProg?.videoCompleted ?? false)
   const [tab, setTab] = useState<'video' | 'quiz'>('video')
@@ -409,9 +413,7 @@ export default function LessonView({
     onProgressUpdate()
   }
 
-  // Only an explicit `true` locks the quiz. This keeps lessons marked as
-  // optional open even when older remote data contains an unset value.
-  const quizLocked = lesson.requireFullWatch === true && !videoCompleted
+  const quizLocked = hasQuestions && lesson.requireFullWatch === true && !videoCompleted
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f1117', display: 'flex', flexDirection: 'column' }}>
@@ -433,19 +435,20 @@ export default function LessonView({
         </div>
         {/* Tab switcher */}
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 999, padding: 3, gap: 2, flexShrink: 0 }}>
-          {(['video', 'quiz'] as const).map(t => (
+          <button
+            onClick={() => setTab('video')}
+            style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: tab === 'video' ? 'rgba(26,86,219,0.8)' : 'transparent', color: tab === 'video' ? '#fff' : 'rgba(241,245,249,0.5)' }}
+          >
+            🎬 Видео
+          </button>
+          {hasQuestions && (
             <button
-              key={t}
-              onClick={() => { if (t === 'quiz' && quizLocked) return; setTab(t) }}
-              style={{
-                fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 999, border: 'none', cursor: t === 'quiz' && quizLocked ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                background: tab === t ? (t === 'video' ? 'rgba(26,86,219,0.8)' : 'rgba(22,163,74,0.8)') : 'transparent',
-                color: tab === t ? '#fff' : t === 'quiz' && quizLocked ? 'rgba(241,245,249,0.2)' : 'rgba(241,245,249,0.5)',
-              }}
+              onClick={() => { if (!quizLocked) setTab('quiz') }}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 999, border: 'none', cursor: quizLocked ? 'not-allowed' : 'pointer', transition: 'all 0.2s', background: tab === 'quiz' ? 'rgba(22,163,74,0.8)' : 'transparent', color: tab === 'quiz' ? '#fff' : quizLocked ? 'rgba(241,245,249,0.2)' : 'rgba(241,245,249,0.5)' }}
             >
-              {t === 'video' ? '🎬 Видео' : `📝 Шалгалт${quizLocked ? ' 🔒' : ''}`}
+              {`📝 Шалгалт${quizLocked ? ' 🔒' : ''}`}
             </button>
-          ))}
+          )}
         </div>
       </header>
 
@@ -470,7 +473,7 @@ export default function LessonView({
                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.4)' }}>🎯 Тэнцэх: {lesson.passingScore}%</span>
                 {lesson.requireFullWatch && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#f59e0b' }}>⚠ Видео дуустал үзэх шаардлагатай</span>}
               </div>
-              {videoCompleted && (
+              {videoCompleted && hasQuestions && (
                 <button
                   onClick={() => setTab('quiz')}
                   style={{ marginTop: 16, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: '#fff', background: 'linear-gradient(135deg,#16a34a,#059669)', border: 'none', borderRadius: 999, padding: '12px 28px', cursor: 'pointer', transition: 'transform 0.15s' }}
