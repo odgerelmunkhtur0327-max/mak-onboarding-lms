@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { store } from './lib/store'
+import { store, dbReady } from './lib/store'
 import type { User, Lesson } from './types'
 import LoginScreen from './screens/LoginScreen'
 import UserHome from './screens/user/UserHome'
@@ -27,6 +27,31 @@ function LoadingScreen() {
       <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(241,245,249,0.35)' }}>
         Системд холбогдож байна...
       </div>
+    </div>
+  )
+}
+
+function DbBanner() {
+  const [dismissed, setDismissed] = useState(false)
+  if (dbReady || dismissed) return null
+  return (
+    <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999, maxWidth: 560, width: 'calc(100% - 32px)', background: '#1c1a14', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 14, padding: '14px 18px', display: 'flex', gap: 12, alignItems: 'flex-start', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+      <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#fbbf24', marginBottom: 4 }}>Supabase холболт тохируулагдаагүй</div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(241,245,249,0.55)', lineHeight: 1.6 }}>
+          Өгөгдөл Supabase-д хадгалагдахын тулд доорх SQL-г <strong style={{ color: '#f1f5f9' }}>Supabase Dashboard → SQL Editor</strong>-т ажиллуулна уу:
+        </div>
+        <pre style={{ marginTop: 8, fontFamily: 'monospace', fontSize: 11, color: '#86efac', background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: '8px 10px', overflow: 'auto', whiteSpace: 'pre-wrap' }}>{`alter table public.courses          disable row level security;
+alter table public.questions        disable row level security;
+alter table public.question_options disable row level security;
+alter table public.users            disable row level security;
+alter table public.user_progress    disable row level security;
+grant usage on schema public to anon;
+grant all on all tables in schema public to anon;
+grant all on all sequences in schema public to anon;`}</pre>
+      </div>
+      <button onClick={() => setDismissed(true)} style={{ background: 'none', border: 'none', color: 'rgba(241,245,249,0.4)', cursor: 'pointer', fontSize: 18, flexShrink: 0, lineHeight: 1 }}>×</button>
     </div>
   )
 }
@@ -68,11 +93,11 @@ export default function App() {
   if (!ready) return <LoadingScreen />
 
   if (!user || screen.kind === 'login') {
-    return <LoginScreen onLogin={handleLogin} />
+    return <><LoginScreen onLogin={handleLogin} /><DbBanner /></>
   }
 
   if (screen.kind === 'admin') {
-    return <AdminPanel onLogout={handleLogout} />
+    return <><AdminPanel onLogout={handleLogout} /><DbBanner /></>
   }
 
   if (screen.kind === 'lesson') {

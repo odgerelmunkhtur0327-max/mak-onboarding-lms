@@ -87,9 +87,9 @@ function LessonEditor({ lesson, onSave, onClose }: { lesson: Lesson | null; onSa
 
   const set = <K extends keyof Lesson>(k: K, v: Lesson[K]) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim()) return
-    store.saveLesson(form)
+    await store.saveLesson(form)
     onSave()
     onClose()
   }
@@ -281,9 +281,9 @@ function LessonsTab({ onRefresh }: { onRefresh: () => void }) {
 
   const refresh = () => { setLessons(store.getLessons()); onRefresh() }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Энэ хичээлийг устгах уу?')) return
-    store.deleteLesson(id)
+    await store.deleteLesson(id)
     refresh()
   }
 
@@ -338,7 +338,7 @@ function QuizzesTab() {
 
   const refresh = () => setLessons(store.getLessons())
 
-  const handleSaveQ = (q: Question) => {
+  const handleSaveQ = async (q: Question) => {
     if (!lesson) return
     const idx = lesson.questions.findIndex(x => x.id === q.id)
     const updated: Lesson = {
@@ -347,13 +347,13 @@ function QuizzesTab() {
         ? lesson.questions.map(x => x.id === q.id ? q : x)
         : [...lesson.questions, q],
     }
-    store.saveLesson(updated)
+    await store.saveLesson(updated)
     refresh()
   }
 
-  const handleDeleteQ = (qId: string) => {
+  const handleDeleteQ = async (qId: string) => {
     if (!lesson || !confirm('Энэ асуултыг устгах уу?')) return
-    store.saveLesson({ ...lesson, questions: lesson.questions.filter(q => q.id !== qId) })
+    await store.saveLesson({ ...lesson, questions: lesson.questions.filter(q => q.id !== qId) })
     refresh()
   }
 
@@ -430,9 +430,9 @@ function UserEditor({ user, onSave, onClose }: { user: User; onSave: () => void;
   const [form, setForm] = useState({ name: user.name, email: user.email, department: user.department, startDate: user.startDate, password: '' })
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || !form.email.trim()) return
-    store.addUser({
+    await store.addUser({
       ...user,
       name: form.name.trim(),
       email: form.email.trim(),
@@ -476,9 +476,9 @@ function UsersTab() {
 
   useEffect(() => { refresh() }, [])
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newUser.name || !newUser.email) return
-    store.addUser({
+    await store.addUser({
       id: newId(),
       name: newUser.name,
       email: newUser.email,
@@ -586,7 +586,7 @@ function UsersTab() {
                   Засах
                 </button>
                 <button
-                  onClick={() => { if (confirm(`${user.name}-ийг устгах уу?`)) { store.deleteUser(user.id); refresh() } }}
+                  onClick={async () => { if (confirm(`${user.name}-ийг устгах уу?`)) { await store.deleteUser(user.id); refresh() } }}
                   style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: '#f87171', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 7, padding: '5px 12px', cursor: 'pointer' }}
                 >
                   Устгах

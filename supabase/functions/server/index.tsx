@@ -34,7 +34,7 @@ async function hashPassword(password: string): Promise<string> {
     .join("");
 }
 
-// ── Helpers: DB rows → frontend shape ────────────────────────────────────────
+// ── Helpers: DB rows → frontend shape ──────────────────────────────────────────
 async function buildLessons(supabase: ReturnType<typeof createClient>) {
   const { data: courses, error: ce } = await supabase
     .from("courses")
@@ -139,7 +139,7 @@ async function upsertLesson(supabase: ReturnType<typeof createClient>, lesson: a
   }
 }
 
-// ── Health ────────────────────────────────────────────────────────────────────
+// ── Health ──────────────────────────────────────────────────────────────────────
 app.get("/make-server-13fc189e/health", (c) => c.json({ status: "ok" }));
 
 // ── Lessons ───────────────────────────────────────────────────────────────────
@@ -202,7 +202,9 @@ app.post("/make-server-13fc189e/auth/login", async (c) => {
     if (!user) return c.json({ error: "Нэвтрэх нэр эсвэл нууц үг буруу байна" }, 401);
 
     const hash = await hashPassword(password);
-    const valid = user.password_hash === hash || user.password_hash === password;
+    const valid =
+      user.password_hash === hash ||
+      user.password_hash === password;
     if (!valid) return c.json({ error: "Нэвтрэх нэр эсвэл нууц үг буруу байна" }, 401);
 
     return c.json({
@@ -281,24 +283,50 @@ app.post("/make-server-13fc189e/users/seed", async (c) => {
   try {
     const users: any[] = await c.req.json();
     const supabase = db();
-    const { data: existing } = await supabase.from("users").select("id");
-    const existingIds = new Set((existing ?? []).map((u: any) => u.id));
 
     for (const user of users) {
-      if (existingIds.has(user.id)) continue;
+      const email = (user.email ?? "").trim().toLowerCase();
+
+      if (!email) continue;
+
+      const { data: existingUser, error: findError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (findError) {
+        throw new Error(findError.message);
+      }
+
+      // Email already exists → don't create duplicate
+      if (existingUser) continue;
+
       const hash = await hashPassword(user.password ?? "user123");
-      await supabase.from("users").upsert({
-        id: user.id,
-        email: (user.email ?? "").trim().toLowerCase(),
-        full_name: user.name ?? "",
-        password_hash: hash,
-        role: user.role === "admin" ? "admin" : "employee",
-        department: user.department ?? "",
-        start_date: user.startDate ?? new Date().toISOString().slice(0, 10),
-      });
+
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert({
+          id: crypto.randomUUID(),
+          email,
+          full_name: user.name ?? "",
+          password_hash: hash,
+          role: user.role === "admin" ? "admin" : "employee",
+          department: user.department ?? "",
+          start_date:
+            user.startDate ??
+            new Date().toISOString().slice(0, 10),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
     }
+
     return c.json({ seeded: true });
   } catch (e: any) {
+    console.error("Seed users error:", e);
     return c.json({ error: e.message }, 500);
   }
 });
@@ -369,7 +397,6 @@ app.post("/make-server-13fc189e/progress/video", async (c) => {
       .eq("user_id", userId)
       .eq("course_id", lessonId)
       .maybeSingle();
-
     const { error } = await supabase.from("user_progress").upsert({
       user_id: userId,
       course_id: lessonId,
@@ -398,7 +425,6 @@ app.post("/make-server-13fc189e/progress/quiz", async (c) => {
       .eq("user_id", userId)
       .eq("course_id", lessonId)
       .maybeSingle();
-
     const { error } = await supabase.from("user_progress").upsert({
       user_id: userId,
       course_id: lessonId,

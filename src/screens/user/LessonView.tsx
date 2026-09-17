@@ -402,14 +402,14 @@ export default function LessonView({
 
   const handleVideoCompleted = useCallback(() => {
     if (!videoCompleted) {
-      store.markVideoCompleted(user.id, lesson.id)
+      store.markVideoCompleted(user.id, lesson.id).catch(() => undefined)
       setVideoCompleted(true)
       onProgressUpdate()
     }
   }, [videoCompleted, user.id, lesson.id, onProgressUpdate])
 
   const handleQuizSubmit = (attempt: QuizAttempt) => {
-    store.saveQuizAttempt(user.id, lesson.id, attempt)
+    store.saveQuizAttempt(user.id, lesson.id, attempt).catch(() => undefined)
     onProgressUpdate()
   }
 
